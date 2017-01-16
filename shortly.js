@@ -2,6 +2,8 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
 
 
 var db = require('./app/config');
@@ -22,10 +24,46 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+// var isAuthenticated = function (req, res, next) {
+//   console.log(arguments);
+//   console.log("you're totally authenticated");
+//   req.user.authenticated = true;
+//   if (req.user.authenticated) {
+//     console.log('.authenticated exists', req.user.authenticated);
+//     next();
+//   }
+//   res.redirect('/login');
+// };
 
-app.get('/', 
-function(req, res) {
-  res.render('index');
+app.use(cookieParser());
+app.use(session({
+  secret: 'asd;lkfjadgkjkn'
+}));
+
+app.get('/', function(req, res, next) {
+  console.log('req session', req.session);
+  var sess = req.session;
+  console.log('sess is', sess);
+  if (sess.views) {
+    sess.views++;
+    res.setHeader('Content-Type', 'text/html');
+    res.write('<p>views: ' + sess.views + '</p>');
+    res.write('<p>expires in: ' + (sess.cookie.maxAge / 1000) + 's</p>');
+    res.end();
+  } else {
+    sess.views = 1;
+    res.end('welcome to the session demo. refresh!');
+  }
+});
+
+// app.get('/', isAuthenticated,
+// function(req, res) {
+//   // check whether user is authorized to log in
+//   res.render('index');
+// });
+
+app.get('/login', function(req, res) {
+  res.render('login');
 });
 
 app.get('/create', 
@@ -75,6 +113,8 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+
+// add isAuthenticated method
 
 
 
