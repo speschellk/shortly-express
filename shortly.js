@@ -24,43 +24,44 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-// var isAuthenticated = function (req, res, next) {
-//   console.log(arguments);
-//   console.log("you're totally authenticated");
-//   req.user.authenticated = true;
-//   if (req.user.authenticated) {
-//     console.log('.authenticated exists', req.user.authenticated);
-//     next();
-//   }
-//   res.redirect('/login');
-// };
 
+// begin user session 
 app.use(cookieParser());
 app.use(session({
   secret: 'asd;lkfjadgkjkn'
 }));
-
-app.get('/', function(req, res, next) {
-  console.log('req session', req.session);
-  var sess = req.session;
-  console.log('sess is', sess);
-  if (sess.views) {
-    sess.views++;
-    res.setHeader('Content-Type', 'text/html');
-    res.write('<p>views: ' + sess.views + '</p>');
-    res.write('<p>expires in: ' + (sess.cookie.maxAge / 1000) + 's</p>');
-    res.end();
-  } else {
-    sess.views = 1;
-    res.end('welcome to the session demo. refresh!');
-  }
-});
-
-// app.get('/', isAuthenticated,
-// function(req, res) {
-//   // check whether user is authorized to log in
-//   res.render('index');
+var a = db.User;
+console.log(a);
+// app.get('/', function(req, res, next) {
+//   console.log('req session', req.session);
+//   var sess = req.session;
+//   console.log('sess is', sess);
+//   if (sess.views) {
+//     sess.views++;
+//     res.setHeader('Content-Type', 'text/html');
+//     res.write('<p>views: ' + sess.views + '</p>');
+//     res.write('<p>expires in: ' + (sess.cookie.maxAge / 1000) + 's</p>');
+//     res.end();
+//   } else {
+//     sess.views = 1;
+//     res.end('welcome to the session demo. refresh!');
+//   }
 // });
+
+app.get('/',
+function(req, res) {
+  // do database query on 
+  var sess = req.session;
+  console.log('what can we even do with this thing', req.session.cookie);
+  if (req.session.cookie) {
+    console.log('YOU HAS COOKIE');
+    res.render('index');
+  } else {
+    res.redirect('/login');
+  }
+  // // check whether user is authorized to log in
+  // res.render('index');
+});
 
 app.get('/login', function(req, res) {
   res.render('login');
