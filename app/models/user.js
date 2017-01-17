@@ -7,20 +7,24 @@ var Promise = require('bluebird');
 var User = db.Model.extend({
   tableName: 'users',
   hasTimestamps: false,
-  defaults: {
-    username: 'bothermo',
-    password: 'itstheendoftheworld'
-  },
+  defaults: {},
 
-  initialize: function() {
+  initialize: function(attr) {
     var potato = this;
-    var salt = bcrypt.genSalt(16, function(err, data) {
+    // generate salt for new user
+    bcrypt.genSalt(16, function(err, salt) {
       if (err) {
-        console.log('error in salt', err);
+        console.log('error salting the potato', err);
       } else {
-        potato.on('creating', function(model, attr, options) {
-          console.log(arguments);
-          model.set('salt', data); // TODO: generate and set a password hash
+        // set salt in users db
+        potato.set('salt', salt);
+        // generate hashed password based on salt
+        bcrypt.hash(attr.password, salt, null, function(err, hashedPW) {
+          if (err) {
+            console.log('error hashing password', err);
+          }
+          // set hashed password in users db
+          potato.set('password', hashedPW);
         });
       }
     });

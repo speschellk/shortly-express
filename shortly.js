@@ -37,9 +37,9 @@ app.use(session({
     maxAge: 3600000,
   }
 }));
-var a = new User();
-console.log('db user', db.User);
-console.log('a is', a);
+// var a = new User().save;
+// console.log('db user', db.User);
+// console.log('a is', a);
 // console.log('user a', a);
 // console.log('user a. salt', a.salt);
 // app.get('/', function(req, res, next) {
@@ -58,43 +58,45 @@ console.log('a is', a);
 //   }
 // });
 
-app.get('/',
-function(req, res) {
+app.get('/', function(req, res) {
+
   // do database query
   // still need to hash
-  // console.log('req.session ', req.session);
-  // console.log('db.knex', db.knex);
 
-  console.log('req.session.id', req.session.id);
-  console.log('req.sessionID', req.sessionID);
-  console.log('cookie data', req.session.cookie.sessionId);
-
-  db.knex.select().from('users').where({username: req.session.user}).asCallback(function(err, rows) {
-    // var username = rows[0].username;
-    // var password = rows[0].password;
-    // var salt = rows[0].salt;
-  });
-
-  // bcrypt.compare(req.session.password, password, function(err) {
-  //   if (err) {
-  //     console.log(err);
-  //   } else {
-  // //     // 
-  // //   }
+  // db.knex.select().from('users').where({username: req.session.user}).asCallback(function(err, rows) {
+  //   // var username = rows[0].username;
+  //   // var password = rows[0].password;
+  //   // var salt = rows[0].salt;
   // });
-  // bcrypt.compare current info to encrypted value
-  // bcrypt.compare(data, encrypted, function(//stuff) 
 
-  // if it's the same
-    // provide access to index
-  var sess = req.session;
-  console.log('what can we even do with this thing', req.session.cookie);
-  if (req.session.cookie) {
-    console.log('YOU HAS COOKIE');
-    res.render('index');
-  } else {
-    res.redirect('/login');
-  }
+  // // bcrypt.compare(req.session.password, password, function(err) {
+  // //   if (err) {
+  // //     console.log(err);
+  // //   } else {
+  // // //     // 
+  // // //   }
+  // // });
+  // // bcrypt.compare current info to encrypted value
+  // // bcrypt.compare(data, encrypted, function(//stuff) 
+
+  // // if it's the same
+  //   // provide access to index
+  // var sess = req.session;
+  // console.log('what can we even do with this thing', req.session.cookie);
+  // if (req.session.cookie) {
+  //   console.log('YOU HAS COOKIE');
+  //   res.render('index');
+  // } else {
+
+  // if i make a get request to the homepage,
+  // site should try to figure out whether or not i'm already logged in.
+  // it does that my looking for my cookie.
+  // my cookie should be non-expired and should have the same information that site implanted in it when i logged in.
+  // my cookie will not have that information if i haven't logged in.
+  // so, upon login, establish new session and set cookie with specific information.
+
+  res.redirect('/login');
+  // }
 });
 
 app.get('/login', function(req, res) {
@@ -143,6 +145,15 @@ function(req, res) {
       });
     }
   });
+});
+
+app.post('/login', function(req, res) {
+  console.log('we are posting username and password to login');
+  console.log('session username:', req.session.username);
+  var user = new User({
+    username: req.body.username,
+    password: req.body.password,
+  }).save();
 });
 
 /************************************************************/
