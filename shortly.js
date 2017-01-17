@@ -4,7 +4,7 @@ var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
-
+var sessions = require('client-sessions');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -28,10 +28,20 @@ app.use(express.static(__dirname + '/public'));
 // begin user session 
 app.use(cookieParser());
 app.use(session({
-  secret: 'asd;lkfjadgkjkn'
+  secret: 'asdlkfjadgkjasd8753fkjncweo2inlasdjkn',
+  resave: true,
+  saveUninitialized: false,
+  cookieName: 'session',
+  cookie: { 
+    secure: true,
+    maxAge: 3600000,
+  }
 }));
-var a = db.User;
-console.log(a);
+var a = new User();
+console.log('db user', db.User);
+console.log('a is', a);
+// console.log('user a', a);
+// console.log('user a. salt', a.salt);
 // app.get('/', function(req, res, next) {
 //   console.log('req session', req.session);
 //   var sess = req.session;
@@ -50,7 +60,33 @@ console.log(a);
 
 app.get('/',
 function(req, res) {
-  // do database query on 
+  // do database query
+  // still need to hash
+  // console.log('req.session ', req.session);
+  // console.log('db.knex', db.knex);
+
+  console.log('req.session.id', req.session.id);
+  console.log('req.sessionID', req.sessionID);
+  console.log('cookie data', req.session.cookie.sessionId);
+
+  db.knex.select().from('users').where({username: req.session.user}).asCallback(function(err, rows) {
+    // var username = rows[0].username;
+    // var password = rows[0].password;
+    // var salt = rows[0].salt;
+  });
+
+  // bcrypt.compare(req.session.password, password, function(err) {
+  //   if (err) {
+  //     console.log(err);
+  //   } else {
+  // //     // 
+  // //   }
+  // });
+  // bcrypt.compare current info to encrypted value
+  // bcrypt.compare(data, encrypted, function(//stuff) 
+
+  // if it's the same
+    // provide access to index
   var sess = req.session;
   console.log('what can we even do with this thing', req.session.cookie);
   if (req.session.cookie) {
@@ -59,8 +95,6 @@ function(req, res) {
   } else {
     res.redirect('/login');
   }
-  // // check whether user is authorized to log in
-  // res.render('index');
 });
 
 app.get('/login', function(req, res) {

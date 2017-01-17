@@ -7,13 +7,22 @@ var Promise = require('bluebird');
 var User = db.Model.extend({
   tableName: 'users',
   hasTimestamps: false,
+  defaults: {
+    username: 'bothermo',
+    password: 'itstheendoftheworld'
+  },
 
   initialize: function() {
-    console.log('i made a user');
-    this.on('creating', function(model, attrs, options) {
-      var shasum = crypto.createHash('sha1');
-      // shasum.update(model.get('url'));
-      model.set('salt', shasum.digest('hex').slice(0, 17)); // TODO: generate and set a password hash
+    var potato = this;
+    var salt = bcrypt.genSalt(16, function(err, data) {
+      if (err) {
+        console.log('error in salt', err);
+      } else {
+        potato.on('creating', function(model, attr, options) {
+          console.log(arguments);
+          model.set('salt', data); // TODO: generate and set a password hash
+        });
+      }
     });
   }
 });
