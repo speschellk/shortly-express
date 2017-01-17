@@ -6,6 +6,9 @@ var cookieParser = require('cookie-parser');
 var session = require('express-session');
 var sessions = require('client-sessions');
 
+//nobody knows we're supposed to have this
+var bcrypt = require('bcrypt-nodejs');
+
 var db = require('./app/config');
 var Users = require('./app/collections/users');
 var User = require('./app/models/user');
@@ -31,17 +34,8 @@ app.use(session({
   secret: 'asdlkfjadgkjasd8753fkjncweo2inlasdjkn',
   resave: true,
   saveUninitialized: false,
-  cookieName: 'session',
-  cookie: { 
-    secure: true,
-    maxAge: 3600000,
-  }
 }));
 // var a = new User().save;
-// console.log('db user', db.User);
-// console.log('a is', a);
-// console.log('user a', a);
-// console.log('user a. salt', a.salt);
 // app.get('/', function(req, res, next) {
 //   console.log('req session', req.session);
 //   var sess = req.session;
@@ -58,35 +52,35 @@ app.use(session({
 //   }
 // });
 
+// TODO: Authenticate with cookie?
 app.get('/', function(req, res) {
 
+  // check cookie to determine that authenticated user is still signed in
   // do database query
-  // still need to hash
+  // req.body.user = 'here';
+  // req.body.password = 'wego';
+  console.log('/ : reqbodyusername', req.body.username);
+  console.log('/ : req session is', req.session);
+  db.knex.select('password', 'salt').from('users').where({username: req.session.user.username}).asCallback(function(err, rows) {
+    // if user not found in db, redirect to login page
+    if (!rows[0] || rows[0].length <= 0) {
+      console.log('/ : You do not exist in the db.');
+      res.redirect('login');
+    } else {
+      console.log('/ : You exist in the db.');
+      bcrypt.compare(req.session.user.password, rows[0].password, function(err, result) {
+        if (err) {
+          console.log('error comparing passwords', err);
+        } else {
+          console.log('/ : You exist in the db and your passwords match.');
+          console.log('rendering index for you');
+          res.render('index');
+        }
+      });
+    }
+    // compare user's password to hashed password associated with that user
 
-  // db.knex.select().from('users').where({username: req.session.user}).asCallback(function(err, rows) {
-  //   // var username = rows[0].username;
-  //   // var password = rows[0].password;
-  //   // var salt = rows[0].salt;
-  // });
-
-  // // bcrypt.compare(req.session.password, password, function(err) {
-  // //   if (err) {
-  // //     console.log(err);
-  // //   } else {
-  // // //     // 
-  // // //   }
-  // // });
-  // // bcrypt.compare current info to encrypted value
-  // // bcrypt.compare(data, encrypted, function(//stuff) 
-
-  // // if it's the same
-  //   // provide access to index
-  // var sess = req.session;
-  // console.log('what can we even do with this thing', req.session.cookie);
-  // if (req.session.cookie) {
-  //   console.log('YOU HAS COOKIE');
-  //   res.render('index');
-  // } else {
+  });
 
   // if i make a get request to the homepage,
   // site should try to figure out whether or not i'm already logged in.
@@ -95,28 +89,82 @@ app.get('/', function(req, res) {
   // my cookie will not have that information if i haven't logged in.
   // so, upon login, establish new session and set cookie with specific information.
 
-  res.redirect('/login');
+  // res.redirect('/login');
   // }
 });
 
+// DONE
 app.get('/login', function(req, res) {
   res.render('login');
 });
 
-app.get('/create', 
-function(req, res) {
+// TODO: try moving 'save' method to initialize model
+app.post('/login', function(req, res) {
+  console.log('/login: BODY', req.body);
+  db.knex.select().from('users').where({username: req.body.username}).asCallback(function(err, rows) {
+    // if user not found in db, redirect to login page
+    if (!rows[0] || rows[0].length <= 0) {
+      console.log('/login: User is not in the database.');
+      res.redirect('login');
+    } else {
+      console.log('/login: User is in the database!');
+      bcrypt.compare(req.body.password, rows[0].password, function(err, result) {
+        if (err) {
+          console.log('Passwords do not match.', err);
+        } else {
+          // Username in db and passwords match
+          console.log('/login: User is authenticated.');
+          req.session.user = rows[0];
+          console.log('/login: User is', req.session.user);
+          console.log('redirecting to / page');
+          res.redirect('/');
+          // res.render('index');
+        }
+      });
+
+    }
+    // compare user's password to hashed password in db
+
+  });
+});
+
+app.get('/create', function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
-function(req, res) {
+app.get('/links', function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
 
-app.post('/links', 
-function(req, res) {
+// DONE
+app.get('/signup', function(req, res) {
+  res.render('signup');
+});
+
+// TODO: cookie
+app.post('/signup', function(req, res) {
+
+  new User({ username: req.body.username }).fetch().then(function(found) {
+    if (found) {
+      console.log('WE FOUND YOU, MANG');
+      res.status(200).send();
+    } else {
+      console.log('we did not find you');
+      Users.create({
+        username: req.body.username,
+        password: req.body.password
+      })
+      .then(function(whatever) {
+        res.status(200).send(whatever);
+      });
+    }
+  });
+  // stick a cookie on them now
+});
+
+app.post('/links', function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
@@ -147,14 +195,6 @@ function(req, res) {
   });
 });
 
-app.post('/login', function(req, res) {
-  console.log('we are posting username and password to login');
-  console.log('session username:', req.session.username);
-  var user = new User({
-    username: req.body.username,
-    password: req.body.password,
-  }).save();
-});
 
 /************************************************************/
 // Write your authentication routes here

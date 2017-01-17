@@ -10,23 +10,25 @@ var User = db.Model.extend({
   defaults: {},
 
   initialize: function(attr) {
-    var potato = this;
-    // generate salt for new user
-    bcrypt.genSalt(16, function(err, salt) {
-      if (err) {
-        console.log('error salting the potato', err);
-      } else {
-        // set salt in users db
-        potato.set('salt', salt);
-        // generate hashed password based on salt
-        bcrypt.hash(attr.password, salt, null, function(err, hashedPW) {
-          if (err) {
-            console.log('error hashing password', err);
-          }
-          // set hashed password in users db
-          potato.set('password', hashedPW);
-        });
-      }
+    this.on('creating', function(model, attr, options) {
+      bcrypt.genSalt(16, function(err, salt) {
+        if (err) {
+          console.log('you spilled the salt', err);
+        } else {
+          bcrypt.hash(attr.password, salt, null, function(err, hashedPW) {
+            if (err) {
+              console.log('error hashing password', err);
+            } else {
+              console.log(attr, attr.username, salt, hashedPW);
+              db.knex('users').where({ username: attr.username }).update({
+                salt: salt, password: hashedPW
+              }).asCallback(function() {
+                console.log('inserted user into database');
+              });
+            }
+          });
+        }
+      });
     });
   }
 });
