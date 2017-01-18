@@ -90,11 +90,6 @@ app.get('/signup', function(req, res) {
   res.render('signup');
 });
 
-// app.get('/logout', function(req, res) {
-//   req.session.destroy();
-//   res.redirect('/login');
-// });
-
 app.post('/login', util.checkUser, function(req, res) {
   db.knex.select().from('users').where({username: req.body.username}).asCallback(function(err, rows) {
     // if user not found in db, redirect to login page
