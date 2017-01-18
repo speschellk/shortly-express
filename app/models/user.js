@@ -9,24 +9,24 @@ var User = db.Model.extend({
   hasTimestamps: false,
 
   initialize: function(attr) {
-    this.on('creating', function(model, attr, options) {
-      bcrypt.genSalt(16, function(err, salt) {
-        if (err) {
-          console.log('Error generating salt', err);
-        } else {
-          bcrypt.hash(attr.password, salt, null, function(err, hashedPW) {
-            if (err) {
-              console.log('Error hashing password', err);
-            } else {
-              console.log(attr, attr.username, salt, hashedPW);
-              db.knex('users').where({ username: attr.username }).update({
-                salt: salt, password: hashedPW
-              }).asCallback(function() {});
-            }
-          });
-        }
-      });
-    });
+    // this.on('creating', function(model, attr, options) {
+    //   bcrypt.genSalt(16, function(err, salt) {
+    //     if (err) {
+    //       console.log('Error generating salt', err);
+    //     } else {
+    //       bcrypt.hash(attr.password, salt, null, function(err, hashedPW) {
+    //         if (err) {
+    //           console.log('Error hashing password', err);
+    //         } else {
+    //           console.log(attr, attr.username, salt, hashedPW);
+    //           db.knex('users').where({ username: attr.username }).update({
+    //             salt: salt, password: hashedPW
+    //           }).asCallback(function() {});
+    //         }
+    //       });
+    //     }
+    //   });
+    // });
   }
 });
 
