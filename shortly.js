@@ -45,7 +45,7 @@ app.get('/create', util.checkUser, function(req, res) {
 // Render links if user is logged in
 app.get('/links', util.checkUser, function(req, res) {
   Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
+    res.status(200).send();
   });
 });
 
@@ -62,7 +62,7 @@ app.post('/links', util.checkUser, function(req, res) {
   // Prep link attributes for short form
   new Link({ url: uri }).fetch().then(function(found) {
     if (found) {
-      res.status(200).send(found.attributes);
+      res.status(200).send();
     } else {
       // Send 404 response if can't read url title
       util.getUrlTitle(uri, function(err, title) {
@@ -100,7 +100,7 @@ app.get('/signup', function(req, res) {
 });
 
 // Compare login credentials to users db
-app.post('/login', util.checkUser, function(req, res) {
+app.post('/login', function(req, res) {
   db.knex.select().from('users').where({username: req.body.username}).asCallback(function(err, rows) {
     // if username not found in db, redirect to login page
     if (!rows[0] || rows[0].length <= 0) {
@@ -143,6 +143,11 @@ app.post('/signup', function(req, res) {
       });
     }
   });
+});
+
+app.get('/logout', function(req, res) {
+  req.session = null;
+  res.redirect('/login');
 });
 
 /************************************************************/
