@@ -40,11 +40,46 @@ app.get('/create', util.checkUser, function(req, res) {
   res.render('index');
 });
 
+app.get('/links', util.checkUser, function(req, res) {
+  Links.reset().fetch().then(function(links) {
+    res.status(200).send(links.models);
+  });
+});
+
+app.post('/links', util.checkUser, function(req, res) {
+  var uri = req.body.url;
+
+  if (!util.isValidUrl(uri)) {
+    console.log('Not a valid url: ', uri);
+    return res.sendStatus(404);
+  }
+
+  new Link({ url: uri }).fetch().then(function(found) {
+    if (found) {
+      res.status(200).send(found.attributes);
+    } else {
+      util.getUrlTitle(uri, function(err, title) {
+        if (err) {
+          console.log('Error reading URL heading: ', err);
+          return res.sendStatus(404);
+        }
+
+        Links.create({
+          url: uri,
+          title: title,
+          baseUrl: req.headers.origin
+        })
+        .then(function(newLink) {
+          res.status(200).send(newLink);
+        });
+      });
+    }
+  });
+});
 
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
-
 
 app.get('/login', function(req, res) {
   res.render('login');
@@ -54,17 +89,12 @@ app.get('/signup', function(req, res) {
   res.render('signup');
 });
 
-app.get('/links', util.checkUser, function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
-  });
-});
-
 app.get('/logout', function(req, res) {
   req.session.destroy();
+  res.redirect('/login');
 });
 
-app.post('/login', function(req, res) {
+app.post('/login', util.checkUser, function(req, res) {
   db.knex.select().from('users').where({username: req.body.username}).asCallback(function(err, rows) {
     // if user not found in db, redirect to login page
     if (!rows[0] || rows[0].length <= 0) {
@@ -91,66 +121,19 @@ app.post('/signup', function(req, res) {
       console.log('Account with this username already exists');
       res.redirect('/signup');
     } else {
-      // encrypt password here?
-      Users.create({
-        username: req.body.username,
-        password: req.body.password
-      })
-      .then(function(userData) {
-        util.createSession(req, res, userData);
+      // encrypt password here
+      bcrypt.hash(req.body.password, null, null, function(err, hash) {
+        Users.create({
+          username: req.body.username,
+          password: hash
+        })
+        .then(function(userData) {
+          util.createSession(req, res, userData);
+        });
       });
     }
   });
 });
-
-app.post('/links', function(req, res) {
-  if (!req.session.user) { 
-    res.redirect('/');
-  } else {
-    db.knex.select('password', 'salt').from('users').where({ username: req.session.user.username }).asCallback(function(err, rows) {
-      // if user not found in db, redirect to login page
-      if (!rows[0] || rows[0].length <= 0) {
-        res.redirect('login');
-      } else {
-        bcrypt.compare(req.session.user.password, rows[0].password, function(err, result) {
-          if (err) {
-            console.log('error comparing passwords', err);
-          } else {
-            var uri = req.body.url;
-
-            if (!util.isValidUrl(uri)) {
-              console.log('Not a valid url: ', uri);
-              return res.sendStatus(404);
-            }
-
-            new Link({ url: uri }).fetch().then(function(found) {
-              if (found) {
-                res.status(200).send(found.attributes);
-              } else {
-                util.getUrlTitle(uri, function(err, title) {
-                  if (err) {
-                    console.log('Error reading URL heading: ', err);
-                    return res.sendStatus(404);
-                  }
-
-                  Links.create({
-                    url: uri,
-                    title: title,
-                    baseUrl: req.headers.origin
-                  })
-                  .then(function(newLink) {
-                    res.status(200).send(newLink);
-                  });
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-  }
-});
-
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
